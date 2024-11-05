@@ -39,6 +39,48 @@ class Task:
     completed_at: Optional[datetime.datetime] = field(default=None)
     result: Optional[TaskResult] = field(default=None)
 
+    def __str__(self) -> str:
+        status = f"[{self.state.value}]"
+        func_name = self.func.__name__ if hasattr(self.func, "__name__") else self.func.__qualname__
+
+        # format arguments if present
+        args_str = f"args={self.args}" if self.args else ""
+        kwargs_str = f"kwargs={self.kwargs}" if self.kwargs else ""
+        args_kwargs = ", ".join(filter(None, [args_str, kwargs_str]))
+        args_kwargs = f"({args_kwargs})" if args_kwargs else "()"
+
+        # format timing info
+        timing = f"created={self.created_at.isoformat()}"
+        if self.started_at:
+            timing += f", started={self.started_at.isoformat()}"
+        if self.completed_at:
+            timing += f", completed={self.completed_at.isoformat()}"
+
+        # format result if present
+        result_str = ""
+        if self.result:
+            if self.result.success:
+                result_str = f" → {self.result.value}"
+            else:
+                result_str = f" → {self.result.error}"
+
+        return f"Task {status} {func_name}{args_kwargs} ({self.task_id}, {self.priority.name} | {timing}{result_str}"
+
+    def __repr__(self) -> str:
+        attrs = [
+            f"func={self.func.__name__ if hasattr(self.func, '__name__') else str(self.func)}",
+            f"args={self.args!r}",
+            f"kwargs={self.kwargs!r}",
+            f"task_id={self.task_id!r}",
+            f"state={self.state!r}",
+            f"priority={self.priority!r}",
+            f"created_at={self.created_at!r}",
+            f"started_at={self.started_at!r}",
+            f"completed_at={self.completed_at!r}",
+            f"result={self.result!r}"
+        ]
+        return f"Task({', '.join(attrs)})"
+
     def __hash__(self) -> int:
         """Make Task hashable using its unique task_id"""
         return hash(self.task_id)
