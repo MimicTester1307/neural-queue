@@ -226,24 +226,35 @@ def test_queue_remove_task():
         if task:
             remaining_tasks.append(task)
     assert tasks[1] not in remaining_tasks
-    assert set(remaining_tasks) == {tasks[0], tasks[2]} # TODO: make Task hashable (since each task has a unique ID)
+    assert set(remaining_tasks) == {tasks[0], tasks[2]}
 
 def test_queue_clear():
     queue = Queue()
     mock_func = lambda: None
 
+    added_tasks = []
+    num_tasks_to_add = 5
+
     # add some tasks
-    for _ in range(5):
+    for _ in range(num_tasks_to_add):
         task = Task(func=mock_func)
         assert queue.put(task, timeout=1) is True
+        added_tasks.append(task)
 
-    assert queue.size() == 5
+    assert queue.size() == num_tasks_to_add
     queue.clear()
+
     assert queue.is_empty()
-    assert queue.get(block=False) is None # TODO: figure out why this hangs
+    assert queue.size() == 0
 
-def test_queue_concurrent_operations(): # TODO: implement test
-    pass
+    assert queue.get(block=False) is None
 
-def test_queue_stress(): # TODO: implement test
-    pass
+    # verify we can't find any of the original tasks
+    for task in added_tasks:
+        assert queue.get_task_by_id(task.task_id) is None
+#
+# def test_queue_concurrent_operations(): # TODO: implement test
+#     pass
+#
+# def test_queue_stress(): # TODO: implement test
+#     pass

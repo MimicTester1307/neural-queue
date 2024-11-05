@@ -159,13 +159,13 @@ class Queue:
 
     def clear(self) -> None:
         """Remove all tasks from the queue."""
-        while True:
-            try:
+        try:
+            while True:
                 self._tasks.get_nowait()
-            except Empty:
-                break
+        except Empty:
+                pass
 
-        while self._lookup_lock:
+        with self._lookup_lock:
             self._task_lookup.clear()
 
     def is_empty(self) -> bool:
