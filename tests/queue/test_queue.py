@@ -167,3 +167,83 @@ def test_queue_priority_with_timing():
     # verify results maintain priority order regardless of execution time
     for i in range(len(results) - 1):
         assert results[i][0].value >= results[i + 1][0].value
+
+def test_queue_maxsize():
+    queue = Queue(maxsize=2)
+    mock_func = lambda: None
+
+    task1 = Task(func=mock_func)
+    task2 = Task(func=mock_func)
+    task3 = Task(func=mock_func)
+
+    assert queue.put(task1, block=False) is True
+    assert queue.put(task2, block=False) is True
+    assert queue.put(task3, block=False) is False # queue is full
+    assert queue.size() == 2
+
+def test_queue_timeout():
+    queue = Queue(maxsize=1)
+    mock_func = lambda: None
+
+    task1 = Task(func=mock_func)
+    task2 = Task(func=mock_func)
+
+    assert queue.put(task1, timeout=1) is True
+    assert queue.put(task2, timeout=0.1) is False # should time out
+
+def test_queue_cancel_task():
+    queue = Queue()
+    mock_func = lambda: None
+    task = Task(func=mock_func)
+
+    assert queue.put(task, timeout=1) is True
+    assert queue.cancel_task(task.task_id) is True
+    assert task.state == TaskState.CANCELLED
+
+    # task should still be in queue but marked as cancelled
+    assert queue.size() == 1
+    retrieved_task = queue.get(timeout=1)
+    assert retrieved_task is not None
+    assert retrieved_task.state == TaskState.CANCELLED
+
+def test_queue_remove_task():
+    queue = Queue()
+    mock_func = lambda: None
+    tasks = [Task(func=mock_func) for _ in range(3)]
+
+    for task in tasks:
+        assert queue.put(task, timeout=1) is True
+
+    # remove middle task
+    removed_task = queue.remove_task(tasks[1].task_id)
+    assert removed_task == tasks[1]
+    assert queue.size() == 2
+
+    # verify remaining tasks
+    remaining_tasks = []
+    for _ in range(2): # we know there are exactly 2 tasks left
+        task = queue.get(timeout=1)
+        if task:
+            remaining_tasks.append(task)
+    assert tasks[1] not in remaining_tasks
+    assert set(remaining_tasks) == {tasks[0], tasks[2]} # TODO: make Task hashable (since each task has a unique ID)
+
+def test_queue_clear():
+    queue = Queue()
+    mock_func = lambda: None
+
+    # add some tasks
+    for _ in range(5):
+        task = Task(func=mock_func)
+        assert queue.put(task, timeout=1) is True
+
+    assert queue.size() == 5
+    queue.clear()
+    assert queue.is_empty()
+    assert queue.get(block=False) is None # TODO: figure out why this hangs
+
+def test_queue_concurrent_operations(): # TODO: implement test
+    pass
+
+def test_queue_stress(): # TODO: implement test
+    pass
