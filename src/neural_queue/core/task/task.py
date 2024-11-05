@@ -39,6 +39,21 @@ class Task:
     completed_at: Optional[datetime.datetime] = field(default=None)
     result: Optional[TaskResult] = field(default=None)
 
+    def __hash__(self) -> int:
+        """Make Task hashable using its unique task_id"""
+        return hash(self.task_id)
+
+    def __eq__(self, other: Task) -> bool:
+        """Tasks are equal if they have the same task_id"""
+        if not isinstance(other, Task):
+            return NotImplemented
+        return self.task_id == other.task_id
+
+    def __lt__(self, other: Task) -> bool:
+        if not isinstance(other, Task):
+            return NotImplemented
+        return self.priority.value > other.priority.value
+
     def execute(self) -> TaskResult:
         """Execute the task and return the result."""
         self.state = TaskState.RUNNING
@@ -78,8 +93,3 @@ class Task:
             self.state = TaskState.CANCELLED
             return True
         return False
-
-    def __lt__(self, other: Task) -> bool:
-        if not isinstance(other, Task):
-            return NotImplemented
-        return self.priority.value > other.priority.value
